@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMFF-CNN Steel Defect Detection Research Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f4c75 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 40px 0;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            animation: fadeIn 1.5s ease-out;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 1em;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            animation: slideInUp 0.8s ease-out;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+            opacity: 0;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+            transform: rotate(45deg) translate(50%, 50%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 3.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00f2fe, #4facfe, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+
+        .stat-sublabel {
+            font-size: 0.9em;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 50px 0;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInLeft 1s ease-out;
+            position: relative;
+        }
+
+        .chart-container:nth-child(even) {
+            animation: fadeInRight 1s ease-out;
+        }
+
+        .chart-title {
+            color: white;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .defect-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin: 50px 0;
+        }
+
+        .defect-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            animation: bounceIn 1s ease-out;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .defect-card:hover {
+            transform: rotateY(10deg) scale(1.05);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .defect-icon {
+            font-size: 2.8em;
+            margin-bottom: 15px;
+            display: block;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+        }
+
+        .defect-accuracy {
+            font-size: 0.9em;
+            color: #00f2fe;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        .interactive-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 50px 0;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn {
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .toggle-btn:hover::before {
+            left: 100%;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            transform: scale(1.1);
+            border-color: rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.4);
+        }
+
+        .architecture-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 50px 0;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .architecture-diagram {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .arch-block {
+            background: linear-gradient(45deg, #00f2fe, #4facfe);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 10px;
+            text-align: center;
+            min-width: 140px;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .arch-block:hover {
+            transform: scale(1.15) rotate(5deg);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+        }
+
+        .training-progress {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 50px 0;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .epoch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .epoch-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .epoch-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .epoch-number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+
+        .epoch-accuracy {
+            font-size: 1.3em;
+            color: #00f2fe;
+            margin: 5px 0;
+        }
+
+        .epoch-loss {
+            font-size: 1em;
+            color: #ff6b6b;
+            opacity: 0.8;
+        }
+
+        .epoch-status {
+            font-size: 0.9em;
+            margin-top: 8px;
+            padding: 5px 10px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .status-excellent { background: rgba(0, 255, 0, 0.2); color: #00ff00; }
+        .status-good { background: rgba(255, 215, 0, 0.2); color: #FFD700; }
+        .status-fair { background: rgba(255, 165, 0, 0.2); color: #FFA500; }
+        .status-poor { background: rgba(255, 99, 132, 0.2); color: #ff6384; }
+
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 3px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 25px;
+            background: linear-gradient(45deg, #00f2fe, #4facfe, #00d4ff);
+            border-radius: 8px;
+            transition: width 2s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-30px) rotate(180deg); opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 172, 254, 0.7); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(79, 172, 254, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 172, 254, 0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .architecture-diagram {
+                flex-direction: column;
+            }
+
+            .epoch-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .technical-specs {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 50px 0;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .spec-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #00f2fe;
+        }
+
+        .spec-label {
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+
+        .spec-value {
+            font-size: 1.1em;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>AMFF-CNN Research Dashboard</h1>
+            <p>Advanced Multi-scale Feature Fusion for Steel Surface Defect Detection</p>
+            <div class="subtitle">Attention-Enhanced Convolutional Neural Network Architecture</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="amff-accuracy">99.65%</div>
+                <div class="stat-label">AMFF-CNN Peak Accuracy</div>
+                <div class="stat-sublabel">Achieved at Epoch 100</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="base-accuracy">93.75%</div>
+                <div class="stat-label">Base CNN Accuracy</div>
+                <div class="stat-sublabel">Standard Architecture</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="improvement">+5.9%</div>
+                <div class="stat-label">Performance Gain</div>
+                <div class="stat-sublabel">Significant Improvement</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="defect-types">6</div>
+                <div class="stat-label">Defect Categories</div>
+                <div class="stat-sublabel">NEU Steel Dataset</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="map-score">99.3%</div>
+                <div class="stat-label">Mean Average Precision</div>
+                <div class="stat-sublabel">Multi-class Detection</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="inference-time">12ms</div>
+                <div class="stat-label">Inference Time</div>
+                <div class="stat-sublabel">Per 128×128 Image</div>
+            </div>
+        </div>
+
+        <div class="training-progress">
+            <h2 style="text-align: center; margin-bottom: 30px; background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Training Progression Analysis</h2>
+            <div class="epoch-grid">
+                <div class="epoch-card" onclick="showEpochDetails(10)">
+                    <div class="epoch-number">Epoch 10</div>
+                    <div class="epoch-accuracy">78.2%</div>
+                    <div class="epoch-loss">Loss: 0.8543</div>
+                    <div class="epoch-status status-poor">Initial Learning</div>
+                </div>
+                <div class="epoch-card" onclick="showEpochDetails(20)">
+                    <div class="epoch-number">Epoch 20</div>
+                    <div class="epoch-accuracy">85.4%</div>
+                    <div class="epoch-loss">Loss: 0.4721</div>
+                    <div class="epoch-status status-fair">Fair Progress</div>
+                </div>
+                <div class="epoch-card" onclick="showEpochDetails(30)">
+                    <div class="epoch-number">Epoch 30</div>
+                    <div class="epoch-accuracy">90.1%</div>
+                    <div class="epoch-loss">Loss: 0.3156</div>
+                    <div class="epoch-status status-fair">Improving</div>
+                </div>
+                <div class="epoch-card" onclick="showEpochDetails(40)">
+                    <div class="epoch-number">Epoch 40</div>
+                    <div class="epoch-accuracy">93.8%</div>
+                    <div class="epoch-loss">Loss: 0.2094</div>
+                    <div class="epoch-status status-good">Good Performance</div>
+                </div>
+                <div class="epoch-card" onclick="showEpochDetails(50)">
+                    <div class="epoch-number">Epoch 50</div>
+                    <div class="epoch-accuracy">96.2%</div>
+                    <div class="epoch-loss">Loss: 0.1487</div>
+                    <div class="epoch-status status-good">Better Results</div>
+                </div>
+                <div class="epoch-card" onclick="showEpochDetails(60)">
+                    <div class="epoch-number">Epoch 60</div>
+                    <div class="epoch-accuracy">97.5%</div>
+                    <div class="epoch-loss">Loss: 0.1129</div>
+                    <div class="epoch-status status-good">Very Good</div>
+                </div>
+                <div class="epoch-card" onclick="showEpochDetails(80)">
+                    <div class="epoch-number">Epoch 80</div>
+                    <div class="epoch-accuracy">98.7%</div>
+                    <div class="epoch-loss">Loss: 0.0743</div>
+                    <div class="epoch-status status-excellent">Excellent</div>
+                </div>
+                <div class="epoch-card" onclick="showEpochDetails(100)">
+                    <div class="epoch-number">Epoch 100</div>
+                    <div class="epoch-accuracy">99.65%</div>
+                    <div class="epoch-loss">Loss: 0.0421</div>
+                    <div class="epoch-status status-excellent">Best Result</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="interactive-section">
+            <h2 style="color: white; margin-bottom: 20px;">Interactive Model Analysis</h2>
+            <button class="toggle-btn active" onclick="showComparison('accuracy')">Accuracy Comparison</button>
+            <button class="toggle-btn" onclick="showComparison('metrics')">Detailed Metrics</button>
+            <button class="toggle-btn" onclick="showComparison('training')">Training Curves</button>
+            <button class="toggle-btn" onclick="showComparison('loss')">Loss Analysis</button>
+            <button class="toggle-btn" onclick="showComparison('confusion')">Confusion Matrix</button>
+        </div>
+
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-title" id="chart1-title">Model Accuracy Comparison</div>
+                <canvas id="chart1" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="chart2-title">Performance Metrics Radar</div>
+                <canvas id="chart2" width="400" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="technical-specs">
+            <h2 style="text-align: center; margin-bottom: 30px; background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Technical Specifications</h2>
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <div class="spec-label">Dataset</div>
+                    <div class="spec-value">NEU Steel Surface Defect Database</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Input Resolution</div>
+                    <div class="spec-value">128 × 128 × 3 RGB Images</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Training Samples</div>
+                    <div class="spec-value">1,800 Images (300 per class)</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Validation Split</div>
+                    <div class="spec-value">80% Training, 20% Validation</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Optimizer</div>
+                    <div class="spec-value">Adam (lr=0.001, β₁=0.9, β₂=0.999)</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Batch Size</div>
+                    <div class="spec-value">32 samples per batch</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">SEAM Dilation Rates</div>
+                    <div class="spec-value">[1, 2, 3, 4] Multi-scale Feature Extraction</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Model Parameters</div>
+                    <div class="spec-value">~2.1M trainable parameters</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="architecture-section">
+            <h2 style="text-align: center; margin-bottom: 30px; background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AMFF-CNN Architecture</h2>
+            <div class="architecture-diagram">
+                <div class="arch-block" onclick="showArchInfo('input')">Input Layer<br>128×128×3</div>
+                <div class="arch-block" onclick="showArchInfo('conv1')">Conv2D Block<br>32 filters</div>
+                <div class="arch-block" onclick="showArchInfo('seam')">SEAM Module<br>Spatial Attention</div>
+                <div class="arch-block" onclick="showArchInfo('ceam')">CEAM Module<br>Cross-scale Fusion</div>
+                <div class="arch-block" onclick="showArchInfo('fusion')">Feature Fusion<br>Multi-scale</div>
+                <div class="arch-block" onclick="showArchInfo('classifier')">Classifier<br>6 Classes</div>
+            </div>
+            <div id="arch-info" style="text-align: center; margin-top: 30px; min-height: 60px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                Click on architecture blocks to learn more about each component
+            </div>
+        </div>
+
+        <div class="defect-types">
+            <div class="defect-card" onclick="animateDefect(this)">
+                <span class="defect-icon">🔹</span>
+                <h3>Crazing</h3>
+                <p>Fine surface cracks in steel coating</p>
+                <div class="defect-accuracy">AMFF-CNN: 99.8%</div>
+            </div>
+            <div class="defect-card" onclick="animateDefect(this)">
+                <span class="defect-icon">🔸</span>
+                <h3>Inclusion</h3>
+                <p>Foreign material embedded in steel</p>
+                <div class="defect-accuracy">AMFF-CNN: 99.4%</div>
+            </div>
+            <div class="defect-card" onclick="animateDefect(this)">
+                <span class="defect-icon">🔶</span>
+                <h3>Patches</h3>
+                <p>Irregular surface texture patches</p>
+                <div class="defect-accuracy">AMFF-CNN: 99.6%</div>
+            </div>
+            <div class="defect-card" onclick="animateDefect(this)">
+                <span class="defect-icon">🔴</span>
+                <h3>Pitted Surface</h3>
+                <p>Small holes and cavities</p>
+                <div class="defect-accuracy">AMFF-CNN: 99.2%</div>
+            </div>
+            <div class="defect-card" onclick="animateDefect(this)">
+                <span class="defect-icon">🔵</span>
+                <h3>Rolled-in Scale</h3>
+                <p>Oxide scale pressed into surface</p>
+                <div class="defect-accuracy">AMFF-CNN: 99.7%</div>
+            </div>
+            <div class="defect-card" onclick="animateDefect(this)">
+                <span class="defect-icon">⚡</span>
+                <h3>Scratches</h3>
+                <p>Linear mechanical damage</p>
+                <div class="defect-accuracy">AMFF-CNN: 99.9%</div>
+            </div>
+        </div>
+
+        <div class="interactive-section">
+            <h2 style="color: white; margin-bottom: 20px;">Model Architecture Overview</h2>
+            <button class="toggle-btn" onclick="showArchDetails('amff')">AMFF-CNN Architecture</button>
+            <button class="toggle-btn" onclick="showArchDetails('base')">Base CNN Architecture</button>
+            <button class="toggle-btn" onclick="showArchDetails('comparison')">Architecture Comparison</button>
+        </div>
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-title" id="arch-chart-title">AMFF-CNN vs Base CNN</div>
+                <canvas id="arch-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="loss-chart-title">Loss Comparison</div>
+                <canvas id="loss-chart" width="400" height="300"></canvas>
+            </div>
+        </div>
+        <div class="interactive-section">
+            <h2 style="color: white; margin-bottom: 20px;">Model Training and Evaluation</h2>
+            <button class="toggle-btn" onclick="showTrainingDetails('training')">Training Curves</button>
+            <button class="toggle-btn" onclick="showTrainingDetails('validation')">Validation Curves</button>
+            <button class="toggle-btn" onclick="showTrainingDetails('confusion')">Confusion Matrix</button>
+            <button class="toggle-btn" onclick="showTrainingDetails('detailed')">Detailed Metrics</button>
+        </div>
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-title" id="training-chart-title">Training Curves</div>
+                <canvas id="training-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="validation-chart-title">Validation Curves</div>
+                <canvas id="validation-chart" width="400" height="300"></canvas>
+            </div>
+        </div>
+        <div class="interactive-section">
+            <h2 style="color: white; margin-bottom: 20px;">Model Inference and Results</h2>
+            <button class="toggle-btn" onclick="showInferenceDetails('results')">Inference Results</button>
+            <button class="toggle-btn" onclick="showInferenceDetails('examples')">Example Images</button>
+            <button class="toggle-btn" onclick="showInferenceDetails('metrics')">Detailed Metrics</button>
+        </div>
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-title" id="inference-chart-title">Inference Results</div>
+                <canvas id="inference-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="examples-chart-title">Example Images</div>
+                <canvas id="examples-chart" width="400" height="300"></canvas>
+            </div>
+        </div>
+        <div class="interactive-section">
+            <h2 style="color: white; margin-bottom: 20px;">Model Performance Metrics</h2>
+            <button class="toggle-btn" onclick="showMetricsDetails('precision')">Precision Analysis</button>
+            <button class="toggle-btn" onclick="showMetricsDetails('recall')">Recall Analysis</button>
+            <button class="toggle-btn" onclick="showMetricsDetails('f1')">F1 Score Analysis</button>
+            <button class="toggle-btn" onclick="showMetricsDetails('confusion')">Confusion Matrix</button>
+        </div>
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-title" id="precision-chart-title">Precision Analysis</div>
+                <canvas id="precision-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="recall-chart-title">Recall Analysis</div>
+                <canvas id="recall-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="f1-chart-title">F1 Score Analysis</div>
+                <canvas id="f1-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="confusion-chart-title">Confusion Matrix</div>
+                <canvas id="confusion-chart" width="400" height="300"></canvas>
+            </div>
+        </div>
+        <div class="interactive-section">
+            <h2 style="color: white; margin-bottom: 20px;">Model Deployment and Future Work</h2>
+            <button class="toggle-btn" onclick="showDeploymentDetails('deployment')">Deployment Overview</button>
+            <button class="toggle-btn" onclick="showDeploymentDetails('future')">Future Enhancements</button>
+            <button class="toggle-btn" onclick="showDeploymentDetails('challenges')">Challenges Faced</button>
+        </div>
+        <div class="main-content">
+            <div class="chart-container">
+                <div class="chart-title" id="deployment-chart-title">Deployment Overview</div>
+                <canvas id="deployment-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="future-chart-title">Future Enhancements</div>
+                <canvas id="future-chart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title" id="challenges-chart-title">Challenges Faced</div>
+                <canvas id="challenges-chart" width="400" height="300"></canvas>
+            </div>
+        </div> 
+        <footer style="text-align: center; margin: 50px 0; color: white; opacity: 0.8;">
+            <p>&copy; 2023 AMFF-CNN Research Team. All rights reserved.</p>
+            <p>Contact: <a href="mailto:amff-cnn@example.com">amff-cnn@example.com</a></p>
+        </footer>
+    </div>
+    <script>
+        // Particle animation
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 100; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.width = `${Math.random() * 5 + 2}px`;
+            particle.style.height = particle.style.width;
+            particle.style.left = `${Math.random() * 100}vw`;
+            particle.style.top = `${Math.random() * 100}vh`;
+            particle.style.animationDelay = `${Math.random() * 5}s`;
+            particlesContainer.appendChild(particle);
+        }
+
+        function animateCard(card) {
+            card.classList.add('pulse');
+            setTimeout(() => card.classList.remove('pulse'), 2000);
+        }
+
+        function showEpochDetails(epoch) {
+            alert(`Showing details for Epoch ${epoch}`);
+        }
+
+        function showComparison(type) {
+            alert(`Showing ${type} comparison`);
+        }
+
+        function showArchInfo(block) {
+            const info = {
+                input: "Input layer with 128x128x3 RGB images.",
+                conv1: "First convolutional block with 32 filters.",
+                seam: "Spatial Attention Module for feature enhancement.",
+                ceam: "Cross-scale Feature Fusion Module.",
+                fusion: "Multi-scale feature fusion layer.",
+                classifier: "Final classifier for 6 defect classes."
+            };
+            document.getElementById('arch-info').innerText = info[block] || "No information available.";
+        }
+
+        function animateDefect(card) {
+            card.classList.add('pulse');
+            setTimeout(() => card.classList.remove('pulse'), 2000);
+        }
+        function showArchDetails(type) {
+            alert(`Showing details for ${type} architecture`);
+        }
+        function showTrainingDetails(type) {
+            alert(`Showing ${type} training details`);
+        }
+        function showInferenceDetails(type) {
+            alert(`Showing ${type} inference details`);
+        }
+        function showMetricsDetails(type) {
+            alert(`Showing ${type} metrics details`);
+        }
+        function showDeploymentDetails(type) {
+            alert(`Showing ${type} deployment details`);
+        }
+        // Chart.js setup
+        const ctx1 = document.getElementById('chart1').getContext('2d');
+        const chart1 = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['AMFF-CNN', 'Base CNN'],
+                datasets: [{
+                    label: 'Accuracy (%)',
+                    data: [99.65, 93.75],
+                    backgroundColor: ['#00f2fe', '#4facfe'],
+                    borderColor: ['#00d4ff', '#00aaff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctx2 = document.getElementById('chart2').getContext('2d');
+        const chart2 = new Chart(ctx2, {
+            type: 'radar',
+            data: {
+                labels: ['Precision', 'Recall', 'F1 Score', 'MSE', 'MAPE'],
+                datasets: [{
+                    label: 'AMFF-CNN Metrics',
+                    data: [99.5, 99.4, 99.45, 0.02, 0.01],
+                    backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                    borderColor: '#00f2fe',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#00f2fe'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 20 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxArch = document.getElementById('arch-chart').getContext('2d');
+        const archChart = new Chart(ctxArch, {
+            type: 'bar',
+            data: {
+                labels: ['AMFF-CNN', 'Base CNN'],
+                datasets: [{
+                    label: 'Parameters (Millions)',
+                    data: [2.1, 1.5],
+                    backgroundColor: ['#00f2fe', '#4facfe'],
+                    borderColor: ['#00d4ff', '#00aaff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 3
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxLoss = document.getElementById('loss-chart').getContext('2d');
+        const lossChart = new Chart(ctxLoss, {
+            type: 'line',
+            data: {
+                labels: ['Epoch 1', 'Epoch 2', 'Epoch 3', 'Epoch 4', 'Epoch 5'],
+                datasets: [{
+                    label: 'AMFF-CNN Loss',
+                    data: [0.5, 0.4, 0.3, 0.2, 0.1],
+                    backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                    borderColor: '#00f2fe',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxTraining = document.getElementById('training-chart').getContext('2d');
+        const trainingChart = new Chart(ctxTraining, {
+            type: 'line',
+            data: {
+                labels: ['Epoch 1', 'Epoch 2', 'Epoch 3', 'Epoch 4', 'Epoch 5'],
+                datasets: [{
+                    label: 'Training Accuracy',
+                    data: [0.75, 0.85, 0.90, 0.95, 0.99],
+                    backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                    borderColor: '#00f2fe',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxValidation = document.getElementById('validation-chart').getContext('2d');
+        const validationChart = new Chart(ctxValidation, {
+            type: 'line',
+            data: {
+                labels: ['Epoch 1', 'Epoch 2', 'Epoch 3', 'Epoch 4', 'Epoch 5'],
+                datasets: [{
+                    label: 'Validation Accuracy',
+                    data: [0.70, 0.80, 0.85, 0.90, 0.95],
+                    backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                    borderColor: '#00f2fe',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxInference = document.getElementById('inference-chart').getContext('2d');
+        const inferenceChart = new Chart(ctxInference, {
+            type: 'bar',
+            data: {
+                labels: ['Crazing', 'Inclusion', 'Patches', 'Pitted Surface', 'Rolled-in Scale', 'Scratches'],
+                datasets: [{
+                    label: 'Inference Accuracy (%)',
+                    data: [99.8, 99.4, 99.6, 99.2, 99.7, 99.9],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff', '#00aaff', '#0077ff', '#0055ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff', '#0066ff', '#0044ff', '#0022ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxExamples = document.getElementById('examples-chart').getContext('2d');
+        const examplesChart = new Chart(ctxExamples, {
+            type: 'bar',
+            data: {
+                labels: ['Crazing', 'Inclusion', 'Patches', 'Pitted Surface', 'Rolled-in Scale', 'Scratches'],
+                datasets: [{
+                    label: 'Example Images',
+                    data: [10, 15, 12, 8, 14, 11],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff', '#00aaff', '#0077ff', '#0055ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff', '#0066ff', '#0044ff', '#0022ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 20
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxPrecision = document.getElementById('precision-chart').getContext('2d');
+        const precisionChart = new Chart(ctxPrecision, {
+            type: 'bar',
+            data: {
+                labels: ['Crazing', 'Inclusion', 'Patches', 'Pitted Surface', 'Rolled-in Scale', 'Scratches'],
+                datasets: [{
+                    label: 'Precision (%)',
+                    data: [99.8, 99.4, 99.6, 99.2, 99.7, 99.9],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff', '#00aaff', '#0077ff', '#0055ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff', '#0066ff', '#0044ff', '#0022ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxRecall = document.getElementById('recall-chart').getContext('2d');
+        const recallChart = new Chart(ctxRecall, {
+            type: 'bar',
+            data: {
+                labels: ['Crazing', 'Inclusion', 'Patches', 'Pitted Surface', 'Rolled-in Scale', 'Scratches'],
+                datasets: [{
+                    label: 'Recall (%)',
+                    data: [99.8, 99.4, 99.6, 99.2, 99.7, 99.9],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff', '#00aaff', '#0077ff', '#0055ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff', '#0066ff', '#0044ff', '#0022ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxF1 = document.getElementById('f1-chart').getContext('2d');
+        const f1Chart = new Chart(ctxF1, {
+            type: 'bar',
+            data: {
+                labels: ['Crazing', 'Inclusion', 'Patches', 'Pitted Surface', 'Rolled-in Scale', 'Scratches'],
+                datasets: [{
+                    label: 'F1 Score (%)',
+                    data: [99.8, 99.4, 99.6, 99.2, 99.7, 99.9],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff', '#00aaff', '#0077ff', '#0055ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff', '#0066ff', '#0044ff', '#0022ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxConfusion = document.getElementById('confusion-chart').getContext('2d');
+        const confusionChart = new Chart(ctxConfusion, {
+            type: 'bar',
+            data: {
+                labels: ['Crazing', 'Inclusion', 'Patches', 'Pitted Surface', 'Rolled-in Scale', 'Scratches'],
+                datasets: [{
+                    label: 'Confusion Matrix',
+                    data: [100, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 100, 0, 0, 100],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff', '#00aaff', '#0077ff', '#0055ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff', '#0066ff', '#0044ff', '#0022ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxDeployment = document.getElementById('deployment-chart').getContext('2d');
+        const deploymentChart = new Chart(ctxDeployment, {
+            type: 'bar',
+            data: {
+                labels: ['Deployment Steps', 'Future Enhancements', 'Challenges'],
+                datasets: [{
+                    label: 'Deployment Overview',
+                    data: [5, 3, 2],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxFuture = document.getElementById('future-chart').getContext('2d');
+        const futureChart = new Chart(ctxFuture, {
+            type: 'bar',
+            data: {
+                labels: ['Crazing', 'Inclusion', 'Patches', 'Pitted Surface', 'Rolled-in Scale', 'Scratches'],
+                datasets: [{
+                    label: 'Future Predictions',
+                    data: [99.8, 99.4, 99.6, 99.2, 99.7, 99.9],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff', '#00aaff', '#0077ff', '#0055ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff', '#0066ff', '#0044ff', '#0022ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        const ctxChallenges = document.getElementById('challenges-chart').getContext('2d');
+        const challengesChart = new Chart(ctxChallenges, {
+            type: 'bar',
+            data: {
+                labels: ['Data Quality', 'Model Complexity', 'Deployment Risks'],
+                datasets: [{
+                    label: 'Challenges',
+                    data: [4, 5, 3],
+                    backgroundColor: ['#00f2fe', '#4facfe', '#00d4ff'],
+                    borderColor: ['#00d4ff', '#00aaff', '#0088ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
