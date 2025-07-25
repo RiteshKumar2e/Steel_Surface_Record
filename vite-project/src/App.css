@@ -799,4 +799,360 @@
                       <div class="spec-label">Regularization</div>
                       <div class="spec-value">Dropout, BatchNorm</div>
                     </div>
+                    <div class="spec-item">
+                    <div class="spec-label">Loss Function</div>
+                    <div class="spec-value">Cross-Entropy Loss</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Data Augmentation</div>
+                    <div class="spec-value">Rotation, Flip, Scale, Noise</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="architecture-section">
+            <h2 style="text-align: center; margin-bottom: 30px; background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AMFF-CNN Architecture</h2>
+            <div class="architecture-diagram">
+                <div class="arch-block" onclick="showArchDetails('input')">
+                    <div style="font-size: 1.2em; font-weight: bold;">Input Layer</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">128×128×3</div>
+                </div>
+                <div class="arch-block" onclick="showArchDetails('conv1')">
+                    <div style="font-size: 1.2em; font-weight: bold;">Conv Block 1</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">64 filters</div>
+                </div>
+                <div class="arch-block" onclick="showArchDetails('conv2')">
+                    <div style="font-size: 1.2em; font-weight: bold;">Conv Block 2</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">128 filters</div>
+                </div>
+                <div class="arch-block" onclick="showArchDetails('amff')">
+                    <div style="font-size: 1.2em; font-weight: bold;">AMFF Module</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">Multi-scale</div>
+                </div>
+                <div class="arch-block" onclick="showArchDetails('attention')">
+                    <div style="font-size: 1.2em; font-weight: bold;">Attention</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">Feature Focus</div>
+                </div>
+                <div class="arch-block" onclick="showArchDetails('classifier')">
+                    <div style="font-size: 1.2em; font-weight: bold;">Classifier</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">6 classes</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="defect-types">
+            <div class="defect-card" onclick="showDefectDetails('crazing')">
+                <div class="defect-icon">🕳️</div>
+                <h3 style="margin: 10px 0; color: #FFD700;">Crazing</h3>
+                <p style="font-size: 0.9em; opacity: 0.8;">Fine cracks on surface</p>
+                <div class="defect-accuracy">Detection: 99.8%</div>
+            </div>
+            <div class="defect-card" onclick="showDefectDetails('inclusion')">
+                <div class="defect-icon">⚫</div>
+                <h3 style="margin: 10px 0; color: #FFD700;">Inclusion</h3>
+                <p style="font-size: 0.9em; opacity: 0.8;">Foreign material spots</p>
+                <div class="defect-accuracy">Detection: 99.2%</div>
+            </div>
+            <div class="defect-card" onclick="showDefectDetails('patches')">
+                <div class="defect-icon">🔲</div>
+                <h3 style="margin: 10px 0; color: #FFD700;">Patches</h3>
+                <p style="font-size: 0.9em; opacity: 0.8;">Irregular surface areas</p>
+                <div class="defect-accuracy">Detection: 99.5%</div>
+            </div>
+            <div class="defect-card" onclick="showDefectDetails('pitted')">
+                <div class="defect-icon">🔘</div>
+                <h3 style="margin: 10px 0; color: #FFD700;">Pitted Surface</h3>
+                <p style="font-size: 0.9em; opacity: 0.8;">Small depressions</p>
+                <div class="defect-accuracy">Detection: 99.0%</div>
+            </div>
+            <div class="defect-card" onclick="showDefectDetails('rolled')">
+                <div class="defect-icon">📏</div>
+                <h3 style="margin: 10px 0; color: #FFD700;">Rolled Scale</h3>
+                <p style="font-size: 0.9em; opacity: 0.8;">Scale formations</p>
+                <div class="defect-accuracy">Detection: 99.7%</div>
+            </div>
+            <div class="defect-card" onclick="showDefectDetails('scratches')">
+                <div class="defect-icon">〰️</div>
+                <h3 style="margin: 10px 0; color: #FFD700;">Scratches</h3>
+                <p style="font-size: 0.9em; opacity: 0.8;">Linear surface marks</p>
+                <div class="defect-accuracy">Detection: 99.9%</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 4 + 2;
+                const left = Math.random() * 100;
+                const animationDelay = Math.random() * 8;
+                const animationDuration = Math.random() * 10 + 8;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${left}%`;
+                particle.style.animationDelay = `${animationDelay}s`;
+                particle.style.animationDuration = `${animationDuration}s`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Chart configurations
+        Chart.defaults.color = '#ffffff';
+        Chart.defaults.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.2)';
+
+        // Training data
+        const epochs = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+        const amffAccuracy = [78.2, 85.4, 90.1, 93.8, 96.2, 97.5, 98.1, 98.7, 99.2, 99.65];
+        const baseAccuracy = [75.1, 81.2, 85.8, 88.5, 90.3, 91.8, 92.5, 93.1, 93.5, 93.75];
+        const amffLoss = [0.8543, 0.4721, 0.3156, 0.2094, 0.1487, 0.1129, 0.0892, 0.0743, 0.0594, 0.0421];
+        const baseLoss = [0.9124, 0.5683, 0.4125, 0.3287, 0.2841, 0.2456, 0.2198, 0.1987, 0.1834, 0.1721];
+
+        // Initialize charts
+        function initCharts() {
+            // Accuracy Chart
+            const accuracyCtx = document.getElementById('accuracyChart').getContext('2d');
+            new Chart(accuracyCtx, {
+                type: 'line',
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: 'AMFF-CNN',
+                        data: amffAccuracy,
+                        borderColor: '#00f2fe',
+                        backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#00f2fe',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }, {
+                        label: 'Base CNN',
+                        data: baseAccuracy,
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#ff6b6b',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#ffffff',
+                                font: { size: 14, weight: 'bold' },
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Epochs', color: '#ffffff', font: { size: 14, weight: 'bold' } },
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Accuracy (%)', color: '#ffffff', font: { size: 14, weight: 'bold' } },
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            min: 70,
+                            max: 100
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+
+            // Loss Chart
+            const lossCtx = document.getElementById('lossChart').getContext('2d');
+            new Chart(lossCtx, {
+                type: 'line',
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: 'AMFF-CNN Loss',
+                        data: amffLoss,
+                        borderColor: '#FFD700',
+                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FFD700',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }, {
+                        label: 'Base CNN Loss',
+                        data: baseLoss,
+                        borderColor: '#FFA500',
+                        backgroundColor: 'rgba(255, 165, 0, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FFA500',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#ffffff',
+                                font: { size: 14, weight: 'bold' },
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Epochs', color: '#ffffff', font: { size: 14, weight: 'bold' } },
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Loss Value', color: '#ffffff', font: { size: 14, weight: 'bold' } },
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            min: 0,
+                            max: 1
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Interactive functions
+        function animateCard(card) {
+            card.style.transform = 'scale(1.1) rotateY(10deg)';
+            card.style.transition = 'all 0.3s ease';
+            setTimeout(() => {
+                card.style.transform = '';
+            }, 300);
+        }
+
+        function showComparison(type) {
+            // Remove active class from all buttons
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Show relevant information based on type
+            const messages = {
+                'accuracy': 'Displaying accuracy comparison between AMFF-CNN and Base CNN models.',
+                'metrics': 'Detailed performance metrics including precision, recall, and F1-score.',
+                'training': 'Training curves showing model convergence over epochs.',
+                'loss': 'Loss function analysis and optimization progress.',
+                'confusion': 'Confusion matrix showing per-class detection performance.'
+            };
+            
+            // You could implement actual chart switching here
+            console.log(messages[type]);
+        }
+
+        function showEpochDetails(epoch) {
+            const details = {
+                10: 'Early training phase with high loss and low accuracy.',
+                20: 'Model beginning to learn basic patterns.',
+                30: 'Significant improvement in feature recognition.',
+                40: 'Good performance with stable training.',
+                50: 'High accuracy achieved with low loss.',
+                60: 'Excellent performance, approaching optimal.',
+                80: 'Near-optimal performance with minimal loss.',
+                100: 'Peak performance achieved with best accuracy.'
+            };
+            
+            alert(`Epoch ${epoch}: ${details[epoch]}`);
+        }
+
+        function showArchDetails(component) {
+            const details = {
+                'input': 'Input layer accepts 128×128×3 RGB images of steel surfaces.',
+                'conv1': 'First convolutional block with 64 filters for basic feature extraction.',
+                'conv2': 'Second convolutional block with 128 filters for complex patterns.',
+                'amff': 'Advanced Multi-scale Feature Fusion module combining features at different scales.',
+                'attention': 'Attention mechanism focusing on relevant defect features.',
+                'classifier': 'Final classification layer outputting probabilities for 6 defect types.'
+            };
+            
+            alert(details[component]);
+        }
+
+        function showDefectDetails(defectType) {
+            const details = {
+                'crazing': 'Fine cracks appearing as irregular lines on the steel surface.',
+                'inclusion': 'Foreign materials embedded in the steel during manufacturing.',
+                'patches': 'Irregular surface areas with different texture or color.',
+                'pitted': 'Small depressions or holes on the steel surface.',
+                'rolled': 'Scale formations from the rolling process.',
+                'scratches': 'Linear marks or grooves on the surface.'
+            };
+            
+            alert(`${defectType.charAt(0).toUpperCase() + defectType.slice(1)}: ${details[defectType]}`);
+        }
+
+        function showCredits() {
+            alert('Built with PyTorch, Chart.js, and modern web technologies for advanced steel defect detection research.');
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            setTimeout(initCharts, 500); // Delay to ensure DOM is ready
+            
+            // Add some interactive animations
+            const cards = document.querySelectorAll('.stat-card, .defect-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+
+        // Add some dynamic effects
+        setInterval(() => {
+            const particles = document.querySelectorAll('.particle');
+            particles.forEach(particle => {
+                const currentLeft = parseFloat(particle.style.left);
+                const newLeft = (currentLeft + 0.1) % 100;
+                particle.style.left = `${newLeft}%`;
+            });
+        }, 100);
+    </script>
+</body>
+</html>
+
                     
