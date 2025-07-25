@@ -784,4 +784,19 @@
                     <div class="spec-value">32 samples per batch</div>
                 </div>
                 <div class="spec-item">
-                    <div class
+                    <div class="spec-label">Framework</div>
+                    <div class="spec-value">PyTorch 1.13, CUDA 11.6</div>
+                    </div>
+                    <div class="spec-item">
+                      <div class="spec-label">Model Parameters</div>
+                      <div class="spec-value">~2.1 Million</div>
+                    </div>
+                    <div class="spec-item">
+                      <div class="spec-label">Activation Function</div>
+                      <div class="spec-value">ReLU, Softmax (output)</div>
+                    </div>
+                    <div class="spec-item">
+                      <div class="spec-label">Regularization</div>
+                      <div class="spec-value">Dropout, BatchNorm</div>
+                    </div>
+                    
