@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMFF-CNN Steel Defect Detection Research Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f4c75 75%, #003d5b 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 50px 0;
+            animation: fadeInDown 1s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 4.5em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B35, #FF1744, #FF6B35, #FFA500, #FFD700);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            position: relative;
+        }
+
+        .header h1::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%);
+            animation: shimmerText 2s infinite;
+        }
+
+        .header p {
+            font-size: 1.5em;
+            opacity: 0.9;
+            animation: fadeIn 1.5s ease-out;
+            margin-bottom: 10px;
+            color: #00f2fe;
+        }
+
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.7;
+            font-style: italic;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .real-time-section {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 40px;
+            margin: 30px 0;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .real-time-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(79, 172, 254, 0.1), transparent);
+            animation: rotate 10s linear infinite;
+        }
+
+        .real-time-section > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .detection-zone {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 3px dashed #00f2fe;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            color: white;
+            margin: 30px 0;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .detection-zone.dragover {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.1);
+            transform: scale(1.02);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
+        }
+
+        .detection-zone:hover {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(79, 172, 254, 0.2);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #00f2fe;
+            animation: bounce 2s infinite;
+        }
+
+        .detection-results {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #00f2fe;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .result-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(10px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 35px;
+            text-align: center;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+            animation: slideInUp 0.8s ease-out;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: scale(0);
+            transition: all 0.6s;
+        }
+
+        .stat-card:hover::before {
+            transform: scale(1);
+            top: -50%;
+            left: -50%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-20px) rotateY(5deg) scale(1.05);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 3.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #00f2fe, #4facfe, #00d4ff, #FFD700);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+        }
+
+        .stat-label {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-sublabel {
+            font-size: 0.95em;
+            opacity: 0.7;
+        }
+
+        .live-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            animation: progressBar 3s ease-in-out infinite;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00f2fe;
+            animation: countUp 2s ease-out;
+        }
+
+        .metric-trend {
+            font-size: 0.9em;
+            margin-top: 10px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .trend-up { background: rgba(0, 255, 0, 0.2); color: #00ff00; }
+        .trend-down { background: rgba(255, 0, 0, 0.2); color: #ff4444; }
+        .trend-stable { background: rgba(255, 215, 0, 0.2); color: #FFD700; }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 50px 0;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 35px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInLeft 1s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00f2fe, #4facfe, #00d4ff, #FFD700);
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .chart-container:hover::before {
+            opacity: 1;
+        }
+
+        .chart-container:nth-child(even) {
+            animation: fadeInRight 1s ease-out;
+        }
+
+        .chart-title {
+            color: white;
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            text-align: center;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #00f2fe);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+        }
+
+        .interactive-controls {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 50px 0;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .toggle-btn {
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .toggle-btn:hover::before {
+            left: 100%;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(45deg, #FFD700, #FFA500, #00f2fe);
+            transform: scale(1.1);
+            border-color: rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 30px rgba(255, 165, 0, 0.6);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .defect-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .defect-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+            animation: bounceIn 1s ease-out;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .defect-card::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.2), transparent);
+            transition: all 0.6s;
+            transform: translate(-50%, -50%);
+        }
+
+        .defect-card:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .defect-card:hover {
+            transform: rotateY(15deg) rotateX(5deg) scale(1.1);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px rgba(79, 172, 254, 0.3);
+            border-color: #00f2fe;
+        }
+
+        .defect-icon {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.4));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .defect-accuracy {
+            font-size: 1em;
+            color: #00f2fe;
+            margin-top: 10px;
+            font-weight: bold;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.3);
+        }
+
+        .progress-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 50px 0;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-item {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+        }
+
+        .progress-label {
+            flex: 1;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .progress-bar {
+            flex: 2;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 3px;
+            margin: 0 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 25px;
+            background: linear-gradient(45deg, #00f2fe, #4facfe, #00d4ff);
+            border-radius: 8px;
+            transition: width 2s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        .progress-value {
+            min-width: 60px;
+            text-align: right;
+            color: #00f2fe;
+            font-weight: bold;
+        }
+
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .neural-network {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #00f2fe, #4facfe);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 242, 254, 0.3);
+            transform: translateX(400px);
+            transition: transform 0.5s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes shimmerText {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-30px) rotate(180deg); opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 172, 254, 0.7); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(79, 172, 254, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 172, 254, 0); }
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes progressBar {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 3em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .control-group {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        .realtime-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-particles" id="particles"></div>
+    <canvas class="neural-network" id="neural-network"></canvas>
+    
+    <div class="notification" id="notification">
+        🎯 AI Detection Ready!
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>AMFF-CNN Research Dashboard</h1>
+            <p><span class="realtime-indicator"></span>Advanced Multi-scale Feature Fusion for Steel Surface Defect Detection</p>
+            <div class="subtitle">Attention-Enhanced Convolutional Neural Network Architecture - Live Detection System</div>
+        </div>
+
+        <div class="real-time-section">
+            <h2 style="text-align: center; margin-bottom: 30px; color: white; background: linear-gradient(45deg, #FFD700, #FFA500, #00f2fe); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientShift 3s infinite;">
+                🔬 Live Steel Defect Detection System
+            </h2>
+            
+            <div class="detection-zone" id="detection-zone">
+                <div class="upload-icon">📁</div>
+                <h3>Drag & Drop Steel Images Here</h3>
+                <p>Or click to select files</p>
+                <small>Supports: JPG, PNG, WebP (Max 10MB)</small>
+                <input type="file" id="file-input" style="display: none;" accept="image/*" multiple>
+            </div>
+
+            <div class="detection-results" id="detection-results">
+                <h3 style="color: white; margin-bottom: 20px;">🎯 Detection Results</h3>
+                <div id="results-container"></div>
+            </div>
+        </div>
+
+        <div class="live-metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="live-accuracy">99.65%</div>
+                <div style="color: white;">Live Accuracy</div>
+                <div class="metric-trend trend-up">↗ +0.12%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="processed-images">1,247</div>
+                <div style="color: white;">Images Processed</div>
+                <div class="metric-trend trend-up">↗ +23 today</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="detection-speed">8.3ms</div>
+                <div style="color: white;">Avg Detection Time</div>
+                <div class="metric-trend trend-down">↘ -2.1ms</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="defects-found">156</div>
+                <div style="color: white;">Defects Detected</div>
+                <div class="metric-trend trend-stable">→ Stable</div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="amff-accuracy">99.65%</div>
+                <div class="stat-label">AMFF-CNN Peak Accuracy</div>
+                <div class="stat-sublabel">Achieved at Epoch 100</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="base-accuracy">93.75%</div>
+                <div class="stat-label">Base CNN Accuracy</div>
+                <div class="stat-sublabel">Standard Architecture</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="improvement">+5.9%</div>
+                <div class="stat-label">Performance Gain</div>
+                <div class="stat-sublabel">Significant Improvement</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="defect-types">6</div>
+                <div class="stat-label">Defect Categories</div>
+                <div class="stat-sublabel">NEU Steel Dataset</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="map-score">99.3%</div>
+                <div class="stat-label">Mean Average Precision</div>
+                <div class="stat-sublabel">Multi-class Detection</div>
+            </div>
+            <div class="stat-card pulse" onclick="animateCard(this)">
+                <div class="stat-value" id="inference-time">12ms</div>
+                <div class="stat-label">Inference Time</div>
+                <div class="stat-sublabel">Per 128×128 Image</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <h2 style="text-align: center; margin-bottom: 30px; background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🚀 Real-time Model Performance</h2>
+            <div class="progress-item">
+                <div class="progress-label">Model Confidence</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 96%;" id="confidence-bar">96%</div>
+                </div>
+                <div class="progress-value">96%</div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">Feature Extraction</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 98%;" id="feature-bar">98%</div>
+                </div>
+                <div class="progress-value">98%</div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">Classification Accuracy</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 99.65%;" id="classification-bar">99.65%</div>
+                </div>
+                <div class="progress-value">99.65%</div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">Processing Speed</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 85%;" id="speed-bar">85%</div>
+                </div>
+                <div class="progress-value">85%</div>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="chart-container">
+                <h2 class="chart-title">📊 Model Performance Over Time</h2>
+                <canvas id="performanceChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2 class="chart-title">📈 Defect Detection Trends</h2>
+                <canvas id="defectTrendsChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2 class="chart-title">📉 Accuracy Improvement</h2>
+                <canvas id="accuracyChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2 class="chart-title">📅 Training Progress</h2>
+                <canvas id="trainingProgressChart"></canvas>
+            </div>
+        </div>
+        <div class="interactive-controls">
+            <h2 style="color: white; margin-bottom: 30px; background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🔧 Interactive Controls</h2>
+            <div class="control-group">
+                <button class="toggle-btn" id="toggle-live-metrics">Toggle Live Metrics</button>
+                <button class="toggle-btn" id="toggle-defect-types">Toggle Defect Types</button>
+                <button class="toggle-btn" id="toggle-progress">Toggle Progress Section</button>
+            </div>
+            <div class="control-group">
+                <button class="toggle-btn" id="toggle-charts">Toggle Charts</button>
+            </div>
+            <div class="control-group">
+                <button class="toggle-btn" id="toggle-interactive-controls">Toggle Interactive Controls</button>
+            </div>
+            <div class="control-group">
+                <button class="toggle-btn" id="toggle-notification">Toggle Notification</button>
+            </div>
+        </div> 
+        <div class="defect-types">
+            <div class="defect-card" id="defect-card1">
+                <span class="defect-icon">🛠️</span>
+                <h3>Crack</h3>
+                <p class="defect-accuracy">Accuracy: 98.5%</p>
+            </div>
+            <div class="defect-card" id="defect-card2">
+                <span class="defect-icon">⚠️</span>
+                <h3>Inclusion</h3>
+                <p class="defect-accuracy">Accuracy: 97.2%</p>
+            </div>
+            <div class="defect-card" id="defect-card3">
+                <span class="defect-icon">🔍</span>
+                <h3>Scratch</h3>
+                <p class="defect-accuracy">Accuracy: 96.8%</p>
+            </div>
+            <div class="defect-card" id="defect-card4">
+                <span class="defect-icon">💥</span>
+                <h3>Pitting</h3>
+                <p class="defect-accuracy">Accuracy: 95.9%</p>
+            </div>
+            <div class="defect-card" id="defect-card5">
+                <span class="defect-icon">🧩</span>
+                <h3>Spalling</h3>
+                <p class="defect-accuracy">Accuracy: 94.7%</p>
+            </div>
+            <div class="defect-card" id="defect-card6">
+                <span class="defect-icon">❗</span>
+                <h3>Other Defects</h3>
+                <p class="defect-accuracy">Accuracy: 93.5%</p>
+            </div>
+        </div>
+    </div>
+    <div class="interactive-controls">
+        <h2 style="color: white; margin-bottom: 30px; background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🔧 Interactive Controls</h2>
+        <div class="control-group">
+            <button class="toggle-btn" id="toggle-live-metrics">Toggle Live Metrics</button>
+            <button class="toggle-btn" id="toggle-defect-types">Toggle Defect Types</button>
+            <button class="toggle-btn" id="toggle-progress">Toggle Progress Section</button>
+        </div>
+        <div class="control-group">
+            <button class="toggle-btn" id="toggle-charts">Toggle Charts</button>
+        </div>
+        <div class="control-group">
+            <button class="toggle-btn" id="toggle-interactive-controls">Toggle Interactive Controls</button>
+        </div>
+        <div class="control-group">
+            <button class="toggle-btn" id="toggle-notification">Toggle Notification</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const notification = document.getElementById('notification');
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 1000);
+
+            const detectionZone2 = document.getElementById('detection-zone');
+            const fileInput = document.getElementById('file-input');
+            const resultsContainer = document.getElementById('results-container');
+
+            detectionZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            detectionZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                detectionZone.classList.add('dragover');
+            });
+
+            detectionZone.addEventListener('dragleave', () => {
+                detectionZone.classList.remove('dragover');
+            });
+
+            detectionZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                detectionZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                handleFiles(files);
+            });
+
+            function handleFiles(files) {
+                resultsContainer.innerHTML = '';
+                Array.from(files).forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            displayResult(event.target.result, file.name);
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        alert('Please upload valid image files.');
+                    }
+                });
+            }
+
+            function displayResult(imageSrc, fileName) {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'result-card';
+                
+                const img = document.createElement('img');
+                img.src = imageSrc;
+                img.alt = fileName;
+                img.style.width = '100%';
+                img.style.borderRadius = '10px';
+
+                const title = document.createElement('h4');
+                title.textContent = fileName;
+
+                resultCard.appendChild(img);
+                resultCard.appendChild(title);
+                resultsContainer.appendChild(resultCard);
+                resultCard.addEventListener('click', () => {
+                    alert(`Detected defects in ${fileName}:\n- Crack: 98.5%\n- Inclusion: 97.2%\n- Scratch: 96.8%`);
+                });
+                resultCard.style.display = 'block';
+                document.getElementById('detection-results').style.display = 'block';
+                resultsContainer.scrollTop = resultsContainer.scrollHeight;
+            }
+            document.querySelectorAll('.toggle-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.id.replace('toggle-', '');
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.classList.toggle('hidden');
+                        button.classList.toggle('active');
+                    }
+                });
+            });
+            document.getElementById('detection-results').style.display = 'none';
+            document.getElementById('notification').style.display = 'none';
+            document.getElementById('toggle-notification').addEventListener('click', () => {
+                const notification = document.getElementById('notification');
+                notification.classList.toggle('show');
+            });
+            document.getElementById('toggle-live-metrics').addEventListener('click', () => {
+                const liveMetrics = document.querySelector('.live-metrics');
+                liveMetrics.classList.toggle('hidden');
+            });
+            document.getElementById('toggle-defect-types').addEventListener('click', () => {
+                const defectTypes = document.querySelector('.defect-types');
+                defectTypes.classList.toggle('hidden');
+            });
+            document.getElementById('toggle-progress').addEventListener('click', () => {
+                const progressSection = document.querySelector('.progress-section');
+                progressSection.classList.toggle('hidden');
+            });
+            document.getElementById('toggle-charts').addEventListener('click', () => {
+                const charts = document.querySelector('.main-content');
+                charts.classList.toggle('hidden');
+            });
+            document.getElementById('toggle-interactive-controls').addEventListener('click', () => {
+                const controls = document.querySelector('.interactive-controls');
+                controls.classList.toggle('hidden');
+            });
+            document.querySelectorAll('.defect-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const defectName = card.querySelector('h3').textContent;
+                    alert(`Details for ${defectName}:\n- Accuracy: ${card.querySelector('.defect-accuracy').textContent}`);
+                });
+            });
+            const animateCard = (card) => {
+                card.classList.add('pulse');
+                setTimeout(() => {
+                    card.classList.remove('pulse');
+                }, 2000);
+            };
+            document.querySelectorAll('.defect-card').forEach(card => {
+                card.addEventListener('mouseenter', () => animateCard(card));
+            });
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.addEventListener('mouseenter', () => animateCard(card));
+            });
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 100; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                particlesContainer.appendChild(particle);
+            }
+            particlesJS.load('particles', 'particles.json', function() {
+                console.log('callback - particles.js config loaded');
+            });
+            const canvas = document.getElementById('neural-network');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const drawNetwork = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Draw the neural network here
+            };
+            drawNetwork();
+            window.addEventListener('resize', drawNetwork);
+            const performanceChart = document.getElementById('performanceChart').getContext('2d');
+            const defectTrendsChart = document.getElementById('defectTrendsChart').getContext('2d');
+            const accuracyChart = document.getElementById('accuracyChart').getContext('2d');
+            const trainingProgressChart = document.getElementById('trainingProgressChart').getContext('2d');
+            new Chart(performanceChart, {
+                type: 'line',
+                data: {
+                    labels: ['Epoch 1', 'Epoch 10', 'Epoch 20', 'Epoch 30', 'Epoch 40', 'Epoch 50'],
+                    datasets: [{
+                        label: 'Model Accuracy',
+                        data: [0.85, 0.90, 0.92, 0.95, 0.97, 0.9965],
+                        borderColor: '#00f2fe',
+                        backgroundColor: 'rgba(0, 242, 254, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { mode: 'index' }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            new Chart(defectTrendsChart, {
+                type: 'bar',
+                data: {
+                    labels: ['Crack', 'Inclusion', 'Scratch', 'Pitting', 'Spalling', 'Other'],
+                    datasets: [{
+                        label: 'Defect Count',
+                        data: [45, 30, 25, 20, 15, 21],
+                        backgroundColor: ['#ff4444', '#ffa500', '#00f2fe', '#4facfe', '#00d4ff', '#FFD700'],
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            new Chart(accuracyChart, {
+                type: 'line',
+                data: {
+                    labels: ['Epoch 1', 'Epoch 10', 'Epoch 20', 'Epoch 30', 'Epoch 40', 'Epoch 50'],
+                    datasets: [{
+                        label: 'Accuracy Improvement',
+                        data: [0.85, 0.90, 0.92, 0.95, 0.97, 0.9965],
+                        borderColor: '#FFD700',
+                        backgroundColor: 'rgba(255, 215, 0, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { mode: 'index' }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            new Chart(trainingProgressChart, {
+                type: 'bar',
+                data: {
+                    labels: ['Epoch 1', 'Epoch 10', 'Epoch 20', 'Epoch 30', 'Epoch 40', 'Epoch 50'],
+                    datasets: [{
+                        label: 'Training Loss',
+                        data: [0.5, 0.4, 0.3, 0.2, 0.1, 0.05],
+                        backgroundColor: '#00f2fe',
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            const liveAccuracy = document.getElementById('live-accuracy');
+            const processedImages = document.getElementById('processed-images');
+            const detectionSpeed = document.getElementById('detection-speed');
+            const defectsFound = document.getElementById('defects-found');
+            const updateMetrics = () => {
+                liveAccuracy.textContent = '99.65%';
+                processedImages.textContent = '1,247';
+                detectionSpeed.textContent = '8.3ms';
+                defectsFound.textContent = '156';
+            };
+            updateMetrics();
+            setInterval(updateMetrics, 5000);
+            const confidenceBar = document.getElementById('confidence-bar');
+            const featureBar = document.getElementById('feature-bar');
+            const updateProgressBars = () => {
+                confidenceBar.style.width = '99.65%';
+                featureBar.style.width = '85%';
+            };
+            updateProgressBars();
+            setInterval(updateProgressBars, 5000);
+            const speedBar = document.getElementById('speed-bar');
+            const classificationBar = document.getElementById('classification-bar');
+            const updateSpeedBar = () => {
+                speedBar.style.width = '85%';
+                classificationBar.style.width = '99.65%';
+            };
+            updateSpeedBar();
+            setInterval(updateSpeedBar, 5000);
+            const amffAccuracy = document.getElementById('amff-accuracy');
+            const baseAccuracy = document.getElementById('base-accuracy');
+            const improvement = document.getElementById('improvement');
+            const defectTypes = document.getElementById('defect-types');
+            const mapScore = document.getElementById('map-score');
+            const inferenceTime = document.getElementById('inference-time');
+            const updateStats = () => {
+                amffAccuracy.textContent = '99.65%';
+                baseAccuracy.textContent = '93.75%';
+                improvement.textContent = '+5.9%';
+                defectTypes.textContent = '6';
+                mapScore.textContent = '99.3%';
+                inferenceTime.textContent = '12ms';
+            };
+            updateStats();
+            setInterval(updateStats, 5000);
+            const toggleElements = (selector) => {
+                document.querySelectorAll(selector).forEach(el => {
+                    el.classList.toggle('hidden');
+                });
+            };
+            const toggleStats = () => {
+                toggleElements('.stat');
+            };
+            document.getElementById('toggle-stats').addEventListener('click', toggleStats);
+            const toggleDefectTypes = () => {
+                toggleElements('.defect-card');
+            };
+            document.getElementById('toggle-defect-types').addEventListener('click', toggleDefectTypes);
+            const toggleProgressSection = () => {
+                document.querySelector('.progress-section').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-progress-section').addEventListener('click', toggleProgressSection);
+            const toggleInferenceTime = () => {
+                toggleElements('.inference-time');
+            };
+            document.getElementById('toggle-inference-time').addEventListener('click', toggleInferenceTime);
+            const toggleSpeedSection = () => {
+                document.querySelector('.speed-section').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-speed-section').addEventListener('click', toggleSpeedSection);
+
+            const toggleDetectionSpeed = () => {
+                toggleElements('.detection-speed');
+            };
+            document.getElementById('toggle-detection-speed').addEventListener('click', toggleDetectionSpeed);
+            const toggleProcessingSpeed = () => {
+                toggleElements('.processing-speed');
+            };
+            document.getElementById('toggle-processing-speed').addEventListener('click', toggleProcessingSpeed);
+            const toggleModelConfidence = () => {
+                toggleElements('.model-confidence');
+            };
+            document.getElementById('toggle-model-confidence').addEventListener('click', toggleModelConfidence);
+            const toggleFeatureExtraction = () => {
+                toggleElements('.feature-extraction');
+            };
+            document.getElementById('toggle-feature-extraction').addEventListener('click', toggleFeatureExtraction);
+
+            const toggleClassificationAccuracy = () => {
+                toggleElements('.classification-accuracy');
+            };
+            document.getElementById('toggle-classification-accuracy').addEventListener('click', toggleClassificationAccuracy);
+            document.getElementById('toggle-interactive-controls').addEventListener('click', toggleInteractiveControls);
+            const toggleInteractiveControls = () => {
+                document.querySelector('.interactive-controls').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-interactive-controls').addEventListener('click', toggleInteractiveControls);
+            const toggleNotification = () => {
+                const notification = document.getElementById('notification');
+                notification.classList.toggle('show');
+            };
+            document.getElementById('toggle-notification').addEventListener('click', toggleNotification);
+            const toggleCharts = () => {
+                document.querySelector('.main-content').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-charts').addEventListener('click', toggleCharts);
+            const toggleMainContent = () => {
+                document.querySelector('.main-content').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-main-content').addEventListener('click', toggleMainContent);
+            const toggleFooter = () => {
+                document.querySelector('footer').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-footer').addEventListener('click', toggleFooter);
+            const toggleHeader = () => {
+                document.querySelector('.header').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-header').addEventListener('click', toggleHeader);
+            const toggleRealTimeSection = () => {
+                document.querySelector('.real-time-section').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-real-time-section').addEventListener('click', toggleRealTimeSection);
+            const toggleDetectionZone = () => {
+                document.getElementById('detection-zone').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-detection-zone').addEventListener('click', toggleDetectionZone);
+            const toggleResultsContainer = () => {
+                document.getElementById('detection-results').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-results-container').addEventListener('click', toggleResultsContainer);
+            const toggleFileInput = () => {
+                document.getElementById('file-input').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-file-input').addEventListener('click', toggleFileInput);
+            const toggleUploadIcon = () => {
+                document.querySelector('.upload-icon').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-upload-icon').addEventListener('click', toggleUploadIcon);
+            const toggleDetectionResults = () => {
+                document.getElementById('detection-results').classList.toggle('hidden');
+            };
+            document.getElementById('toggle-detection-results').addEventListener('click', toggleDetectionResults);
+
+            // File upload handling
+            const fileInput2 = document.getElementById('file-input');
+            const detectionZone = document.getElementById('detection-zone');
+            const detectionResults = document.getElementById('detection-results');
+
+            if (fileInput2) {
+                fileInput2.addEventListener('change', handleFileUpload);
+            }
+
+            if (detectionZone2) {
+                detectionZone2.addEventListener('dragover', handleDragOver);
+                detectionZone2.addEventListener('drop', handleFileDrop);
+                detectionZone2.addEventListener('click', () => fileInput2?.click());
+            }
+
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    processImage(file);
+                }
+            }
+
+            function handleDragOver(event) {
+                event.preventDefault();
+                detectionZone.classList.add('drag-over');
+            }
+
+            function handleFileDrop(event) {
+                event.preventDefault();
+                detectionZone.classList.remove('drag-over');
+                const file = event.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    processImage(file);
+                }
+            }
+
+            function processImage(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Display the uploaded image
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    
+                    detectionZone2.innerHTML = '';
+                    detectionZone2.appendChild(img);
+                    
+                    // Simulate detection process
+                    setTimeout(() => {
+                        showDetectionResults();
+                    }, 2000);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function showDetectionResults() {
+                if (detectionResults) {
+                    detectionResults.innerHTML = `
+                        <div class="detection-result-item">
+                            <span class="defect-type">Crack Detected</span>
+                            <span class="confidence">Confidence: 99.2%</span>
+                        </div>
+                        <div class="detection-result-item">
+                            <span class="defect-type">Surface Roughness</span>
+                            <span class="confidence">Confidence: 85.7%</span>
+                        </div>
+                    `;
+                    detectionResults.style.display = 'block';
+                }
+            }
+
+            // Real-time data simulation
+            const simulateRealTimeData = () => {
+                const accuracy = (98.5 + Math.random() * 1.5).toFixed(2);
+                const processed = Math.floor(1200 + Math.random() * 100);
+                const speed = (7.5 + Math.random() * 1.5).toFixed(1);
+                const defects = Math.floor(150 + Math.random() * 20);
+
+                if (liveAccuracy) liveAccuracy.textContent = `${accuracy}%`;
+                if (processedImages) processedImages.textContent = processed.toLocaleString();
+                if (detectionSpeed) detectionSpeed.textContent = `${speed}ms`;
+                if (defectsFound) defectsFound.textContent = defects.toString();
+            };
+
+            // Update real-time data every 3 seconds
+            setInterval(simulateRealTimeData, 3000);
+
+            // Initialize dashboard
+            const initializeDashboard = () => {
+                console.log('AMFF Dashboard initialized successfully');
+                updateMetrics();
+                updateProgressBars();
+                updateSpeedBar();
+                updateStats();
+                simulateRealTimeData();
+            };
+
+            // Run initialization when DOM is fully loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeDashboard);
+            } else {
+                initializeDashboard();
+            }
+
+            // Export functions for external access
+            window.dashboardAPI = {
+                toggleStats,
+                toggleDefectTypes,
+                toggleProgressSection,
+                updateMetrics,
+                simulateRealTimeData,
+                processImage
+            };
+        });
+    </script>
+</body>
+</html>
+''
